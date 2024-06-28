@@ -60,7 +60,7 @@ End Function
 Function VerificarHora()
     Dim horaAtual
     horaAtual = Hour(Now)
-    If horaAtual >= 18 Or horaAtual < 8 Then
+    If horaAtual > 18 Or (horaAtual = 18 And Minute(Now) >= 30) Or horaAtual < 8 Then
         VerificarHora = True
     Else
         VerificarHora = False
