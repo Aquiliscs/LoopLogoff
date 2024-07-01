@@ -24,6 +24,10 @@ feriadosVariaveis = Array("24/02/2024", "25/02/2024", "26/02/2024", "05/04/2024"
                         "25/02/2032", "26/02/2032", "27/02/2032", "02/04/2032", _
                         "14/02/2033", "15/02/2033", "16/02/2033", "15/04/2033")
 
+' Array dos números de série dos pendrives permitidos
+Dim pendrivesPermitidos
+pendrivesPermitidos = Array("x")
+
 ' Função para obter o login do usuário ativo
 Function ObterUsuarioLogado()
     Dim objShell, objExec, strNomeUsuario
@@ -65,6 +69,41 @@ Function VerificarHora()
     Else
         VerificarHora = False
     End If
+End Function
+
+' Função para verificar se é fim de semana
+Function EFinalDeSemana()
+    Dim diaSemana
+    diaSemana = Weekday(Now, vbMonday)
+    If diaSemana > 5 Then ' 6 = Sábado, 7 = Domingo
+        EFinalDeSemana = True
+    Else
+        EFinalDeSemana = False
+    End If
+End Function
+
+' Função para verificar se algum pendrive permitido está conectado
+Function PendrivePermitidoConectado(pendrivesPermitidos)
+    Dim fso, drives, drive, i
+    Set fso = CreateObject("Scripting.FileSystemObject")
+    Set drives = fso.Drives
+    For Each drive In drives
+        If drive.DriveType = 1 Then ' 1 = Removable Drive
+            On Error Resume Next
+            For i = 0 To UBound(pendrivesPermitidos)
+                If drive.SerialNumber = pendrivesPermitidos(i) Then
+                    PendrivePermitidoConectado = True
+                    Set drives = Nothing
+                    Set fso = Nothing
+                    Exit Function
+                End If
+            Next
+            On Error GoTo 0
+        End If
+    Next
+    Set drives = Nothing
+    Set fso = Nothing
+    PendrivePermitidoConectado = False
 End Function
 
 ' Função para registrar mensagens
@@ -154,45 +193,98 @@ Next
 ' Se o usuário for permitido, encerra o script
 If usuarioPermitido Then
     RegistrarMensagem "Usuário permitido, encerrando script."
+    Set usuariosPermitidos = Nothing
+    Set i = Nothing
     WScript.Quit
 End If
 
-RegistrarMensagem "Usuário não permitido, entrando em loop."
+RegistrarMensagem "Usuário não permitido, verificando feriados e finais de semana."
 
-' Se o usuário não for permitido, entra em loop de verificação de hora
-Do
-    Dim dataAtual
-    dataAtual = Day(Now) & "/" & Month(Now) & "/" & Year(Now)
-    Dim eFeriado
-    eFeriado = Eferiado(dataAtual, feriadosNacionais) Or Eferiado(dataAtual, feriadosVariaveis)
-    
-    If estado = "Bahia" Then
-        eFeriado = eFeriado Or Eferiado(dataAtual, feriadosEstaduaisBahia)
-    ElseIf estado = "Pernambuco" Then
-        eFeriado = eFeriado Or Eferiado(dataAtual, feriadosEstaduaisPernambuco)
-    End If
-    
-    Select Case cidade
-        Case "Petrolina"
-            eFeriado = eFeriado Or Eferiado(dataAtual, feriadosMunicipaisPetrolina)
-        Case "Juazeiro"
-            eFeriado = eFeriado Or Eferiado(dataAtual, feriadosMunicipaisJuazeiro)
-        Case "Senhor do Bonfim"
-            eFeriado = eFeriado Or Eferiado(dataAtual, feriadosMunicipaisBonfim)
-        Case "Jacobina"
-            eFeriado = eFeriado Or Eferiado(dataAtual, feriadosMunicipaisJacobina)
-    End Select
-    
-    ' Se estiver fora do horário permitido ou for feriado, faz logoff do usuário
-    If VerificarHora() Or eFeriado Then
-        RegistrarMensagem "Fora do horário permitido ou feriado, fazendo logoff do usuário."
+' Verificação de Feriados e Finais de Semana
+Dim dataAtual, eFeriado, eFinalDeSemana, pendriveConectado
+dataAtual = Day(Now) & "/" & Month(Now) & "/" & Year(Now)
+eFeriado = Eferiado(dataAtual, feriadosNacionais) Or Eferiado(dataAtual, feriadosVariaveis)
+eFinalDeSemana = EFinalDeSemana()
+pendriveConectado = PendrivePermitidoConectado(pendrivesPermitidos)
+
+If estado = "Bahia" Then
+    eFeriado = eFeriado Or Eferiado(dataAtual, feriadosEstaduaisBahia)
+ElseIf estado = "Pernambuco" Then
+    eFeriado = eFeriado Or Eferiado(dataAtual, feriadosEstaduaisPernambuco)
+End If
+
+Select Case cidade
+    Case "Petrolina"
+        eFeriado = eFeriado Or Eferiado(dataAtual, feriadosMunicipaisPetrolina)
+    Case "Juazeiro"
+        eFeriado = eFeriado Or Eferiado(dataAtual, feriadosMunicipaisJuazeiro)
+    Case "Senhor do Bonfim"
+        eFeriado = eFeriado Or Eferiado(dataAtual, feriadosMunicipaisBonfim)
+    Case "Jacobina"
+        eFeriado = eFeriado Or Eferiado(dataAtual, feriadosMunicipaisJacobina)
+End Select
+
+' Se for fim de semana ou feriado
+If eFeriado Or eFinalDeSemana Then
+    If pendriveConectado Then
+        RegistrarMensagem "Pendrive conectado, encerrando script."
+        Set dataAtual = Nothing
+        Set eFeriado = Nothing
+        Set eFinalDeSemana = Nothing
+        Set pendriveConectado = Nothing
+        WScript.Quit
+    Else
+        RegistrarMensagem "Feriado ou final de semana, pendrive não conectado, entrando em loop de logoff."
         Do
             WScript.Sleep 1000 ' Espera 1 segundo
             Dim WshShell
             Set WshShell = WScript.CreateObject("WScript.Shell")
             WshShell.Run "shutdown.exe -l", 0, False
+            Set WshShell = Nothing
         Loop
+    End If
+End If
+
+' Loop de Verificação de Hora
+RegistrarMensagem "Entrando em loop de verificação de hora."
+
+Do
+    If VerificarHora() Then
+        pendriveConectado = PendrivePermitidoConectado(pendrivesPermitidos)
+        If pendriveConectado Then
+            RegistrarMensagem "Pendrive conectado, encerrando script."
+            Set pendriveConectado = Nothing
+            WScript.Quit
+        Else
+            RegistrarMensagem "Fora do horário permitido, pendrive não conectado, entrando em loop de logoff."
+            Do
+                WScript.Sleep 1000 ' Espera 1 segundo
+                Dim WshShell
+                Set WshShell = WScript.CreateObject("WScript.Shell")
+                WshShell.Run "shutdown.exe -l", 0, False
+                Set WshShell = Nothing
+            Loop
+        End If
     End If
     
     WScript.Sleep 60000 ' Espera 1 minuto
 Loop
+
+' Liberar memória
+Set hostname = Nothing
+Set cidade = Nothing
+Set estado = Nothing
+Set feriadosNacionais = Nothing
+Set feriadosEstaduaisBahia = Nothing
+Set feriadosEstaduaisPernambuco = Nothing
+Set feriadosMunicipaisPetrolina = Nothing
+Set feriadosMunicipaisJuazeiro = Nothing
+Set feriadosMunicipaisBonfim = Nothing
+Set feriadosMunicipaisJacobina = Nothing
+Set feriadosVariaveis = Nothing
+Set usuariosPermitidos = Nothing
+Set usuarioLogado = Nothing
+Set dataAtual = Nothing
+Set eFeriado = Nothing
+Set eFinalDeSemana = Nothing
+Set pendriveConectado = Nothing
