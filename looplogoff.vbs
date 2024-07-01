@@ -65,7 +65,7 @@ Function CheckTime()
     Dim currentHour, currentMinute
     currentHour = Hour(Now)
     currentMinute = Minute(Now)
-    If (currentHour >= 8 And currentHour < 11) Or (currentHour = 11 And currentMinute <= 30) Then
+    If (currentHour >= 8 And currentHour < 18) Or (currentHour = 18 And currentMinute <= 30) Then
         CheckTime = False
     Else
         CheckTime = True
