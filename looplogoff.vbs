@@ -1,19 +1,19 @@
 Option Explicit
 
 ' Arrays dos feriados nacionais, estaduais e municipais
-Dim feriadosNacionais, feriadosEstaduaisBahia, feriadosEstaduaisPernambuco
-Dim feriadosMunicipaisPetrolina, feriadosMunicipaisJuazeiro
-Dim feriadosMunicipaisBonfim, feriadosMunicipaisJacobina
-Dim feriadosVariaveis
+Dim arrFeriadosNacionais, arrFeriadosEstaduaisBahia, arrFeriadosEstaduaisPernambuco
+Dim arrFeriadosMunicipaisPetrolina, arrFeriadosMunicipaisJuazeiro
+Dim arrFeriadosMunicipaisBonfim, arrFeriadosMunicipaisJacobina
+Dim arrFeriadosVariaveis
 
-feriadosNacionais = Array("07/09", "25/12", "02/11", "12/02", "30/05", "13/02", "15/11", "29/03", "01/05", "01/01", "12/10", "21/04")
-feriadosEstaduaisBahia = Array("02/07", "20/11")
-feriadosEstaduaisPernambuco = Array("06/03", "20/11")
-feriadosMunicipaisPetrolina = Array("21/09", "24/06", "15/08")
-feriadosMunicipaisJuazeiro = Array("29/01", "15/08", "08/09")
-feriadosMunicipaisBonfim = Array("28/05", "24/06", "17/01")
-feriadosMunicipaisJacobina = Array("08/12", "11/08", "13/06", "24/06")
-feriadosVariaveis = Array("24/02/2024", "25/02/2024", "26/02/2024", "05/04/2024", _
+arrFeriadosNacionais = Array("07/09", "25/12", "02/11", "12/02", "30/05", "13/02", "15/11", "29/03", "01/05", "01/01", "12/10", "21/04")
+arrFeriadosEstaduaisBahia = Array("02/07", "20/11")
+arrFeriadosEstaduaisPernambuco = Array("06/03", "20/11")
+arrFeriadosMunicipaisPetrolina = Array("21/09", "24/06", "15/08")
+arrFeriadosMunicipaisJuazeiro = Array("29/01", "15/08", "08/09")
+arrFeriadosMunicipaisBonfim = Array("28/05", "24/06", "17/01")
+arrFeriadosMunicipaisJacobina = Array("08/12", "11/08", "13/06", "24/06")
+arrFeriadosVariaveis = Array("24/02/2024", "25/02/2024", "26/02/2024", "05/04/2024", _
                         "16/02/2025", "17/02/2025", "18/02/2025", "28/03/2025", _
                         "08/02/2026", "09/02/2026", "10/02/2026", "27/03/2026", _
                         "21/02/2027", "22/02/2027", "23/02/2027", "02/04/2027", _
@@ -25,220 +25,196 @@ feriadosVariaveis = Array("24/02/2024", "25/02/2024", "26/02/2024", "05/04/2024"
                         "14/02/2033", "15/02/2033", "16/02/2033", "15/04/2033")
 
 ' Array dos números de série dos pendrives permitidos
-Dim pendrivesPermitidos
-pendrivesPermitidos = Array("x")
+Dim arrPendrivesPermitidos
+arrPendrivesPermitidos = Array("010145e3efc0c86ae539")
 
 ' Função para obter o login do usuário ativo
-Function ObterUsuarioLogado()
-    Dim objShell, objExec, strNomeUsuario
+Function GetLoggedUser()
+    Dim objShell, objExec, strUserName
     On Error Resume Next
     Set objShell = CreateObject("WScript.Shell")
     Set objExec = objShell.Exec("whoami")
-    strNomeUsuario = objExec.StdOut.ReadLine()
+    strUserName = objExec.StdOut.ReadLine()
     If Err.Number <> 0 Then
-        strNomeUsuario = "Desconhecido"
+        strUserName = "Desconhecido"
     End If
     On Error GoTo 0
     Set objExec = Nothing
     Set objShell = Nothing
-    ObterUsuarioLogado = strNomeUsuario
+    GetLoggedUser = strUserName
 End Function
 
 ' Função para obter o hostname do computador
-Function ObterHostname()
-    Dim objShell, objExec, strHostname
+Function GetHostName()
+    Dim objShell, objExec, strHostName
     On Error Resume Next
     Set objShell = CreateObject("WScript.Shell")
     Set objExec = objShell.Exec("hostname")
-    strHostname = objExec.StdOut.ReadLine()
+    strHostName = objExec.StdOut.ReadLine()
     If Err.Number <> 0 Then
-        strHostname = "Desconhecido"
+        strHostName = "Desconhecido"
     End If
     On Error GoTo 0
     Set objExec = Nothing
     Set objShell = Nothing
-    ObterHostname = strHostname
+    GetHostName = strHostName
 End Function
 
 ' Função para verificar a hora
-Function VerificarHora()
-    Dim horaAtual
-    horaAtual = Hour(Now)
-    If horaAtual > 18 Or (horaAtual = 18 And Minute(Now) >= 30) Or horaAtual < 8 Then
-        VerificarHora = True
+Function CheckTime()
+    Dim currentHour, currentMinute
+    currentHour = Hour(Now)
+    currentMinute = Minute(Now)
+    If (currentHour >= 8 And currentHour < 11) Or (currentHour = 11 And currentMinute <= 30) Then
+        CheckTime = False
     Else
-        VerificarHora = False
+        CheckTime = True
     End If
 End Function
 
 ' Função para verificar se é fim de semana
-Function EFinalDeSemana()
-    Dim diaSemana
-    diaSemana = Weekday(Now, vbMonday)
-    If diaSemana > 5 Then ' 6 = Sábado, 7 = Domingo
-        EFinalDeSemana = True
+Function IsWeekend()
+    Dim dayOfWeek
+    dayOfWeek = Weekday(Now, vbMonday)
+    If dayOfWeek > 5 Then ' 6 = Sábado, 7 = Domingo
+        IsWeekend = True
     Else
-        EFinalDeSemana = False
+        IsWeekend = False
     End If
 End Function
 
 ' Função para verificar se algum pendrive permitido está conectado
-Function PendrivePermitidoConectado(pendrivesPermitidos)
-    Dim fso, drives, drive, i
-    Set fso = CreateObject("Scripting.FileSystemObject")
-    Set drives = fso.Drives
-    For Each drive In drives
-        If drive.DriveType = 1 Then ' 1 = Removable Drive
-            On Error Resume Next
-            For i = 0 To UBound(pendrivesPermitidos)
-                If drive.SerialNumber = pendrivesPermitidos(i) Then
-                    PendrivePermitidoConectado = True
-                    Set drives = Nothing
-                    Set fso = Nothing
-                    Exit Function
-                End If
-            Next
-            On Error GoTo 0
-        End If
+Function IsPendriveAllowedConnected(arrPendrivesPermitidos)
+    Dim objWMIService, colDisks, objDisk, i, serial
+    Set objWMIService = GetObject("winmgmts:\\.\root\cimv2")
+    Set colDisks = objWMIService.ExecQuery("Select * from Win32_DiskDrive")
+
+    For Each objDisk in colDisks
+        serial = objDisk.SerialNumber
+        For i = 0 To UBound(arrPendrivesPermitidos)
+            If serial = arrPendrivesPermitidos(i) Then
+                IsPendriveAllowedConnected = True
+                Set objWMIService = Nothing
+                Set colDisks = Nothing
+                Exit Function
+            End If
+        Next
     Next
-    Set drives = Nothing
-    Set fso = Nothing
-    PendrivePermitidoConectado = False
+
+    Set objWMIService = Nothing
+    Set colDisks = Nothing
+    IsPendriveAllowedConnected = False
 End Function
 
-' Função para registrar mensagens
-Sub RegistrarMensagem(mensagem)
-    Dim fso, arquivoLog
-    Set fso = CreateObject("Scripting.FileSystemObject")
-    Set arquivoLog = fso.OpenTextFile("C:\Temp\loglooplogoff.txt", 8, True)
-    arquivoLog.WriteLine(Now & " - " & mensagem)
-    arquivoLog.Close
-    Set arquivoLog = Nothing
-    Set fso = Nothing
-End Sub
-
 ' Função para verificar se uma data é feriado
-Function Eferiado(data, feriados)
+Function IsHoliday(dateToCheck, arrHolidays)
     Dim i
-    For i = 0 To UBound(feriados)
-        If data = feriados(i) Then
-            Eferiado = True
+    For i = 0 To UBound(arrHolidays)
+        If dateToCheck = arrHolidays(i) Then
+            IsHoliday = True
             Exit Function
         End If
     Next
-    Eferiado = False
+    IsHoliday = False
 End Function
 
 ' Função para adicionar o ano atual às datas
-Function AdicionarAnoAtual(feriados)
-    Dim ano, i
-    ano = Year(Now)
-    For i = 0 To UBound(feriados)
-        feriados(i) = feriados(i) & "/" & ano
+Function AddCurrentYear(arrHolidays)
+    Dim yearNow, j
+    yearNow = Year(Now)
+    For j = 0 To UBound(arrHolidays)
+        arrHolidays(j) = arrHolidays(j) & "/" & yearNow
     Next
-    AdicionarAnoAtual = feriados
+    AddCurrentYear = arrHolidays
 End Function
 
 ' Obtém o hostname do computador
-Dim hostname, cidade, estado
-hostname = ObterHostname()
-RegistrarMensagem "Hostname: " & hostname
+Dim hostName, cityName, stateName
+hostName = GetHostName()
 
 ' Determina a cidade e o estado com base no hostname
 Select Case True
-    Case InStr(hostname, "210101") > 0 Or InStr(hostname, "210102") > 0 Or InStr(hostname, "210104") > 0 Or InStr(hostname, "210106") > 0
-        cidade = "Petrolina"
-        estado = "Pernambuco"
-    Case InStr(hostname, "210103") > 0
-        cidade = "Juazeiro"
-        estado = "Bahia"
-    Case InStr(hostname, "210105") > 0
-        cidade = "Senhor do Bonfim"
-        estado = "Bahia"
-    Case InStr(hostname, "210107") > 0
-        cidade = "Jacobina"
-        estado = "Bahia"
+    Case InStr(hostName, "210101") > 0 Or InStr(hostName, "210102") > 0 Or InStr(hostName, "210104") > 0 Or InStr(hostName, "210106") > 0
+        cityName = "Petrolina"
+        stateName = "Pernambuco"
+    Case InStr(hostName, "210103") > 0
+        cityName = "Juazeiro"
+        stateName = "Bahia"
+    Case InStr(hostName, "210105") > 0
+        cityName = "Senhor do Bonfim"
+        stateName = "Bahia"
+    Case InStr(hostName, "210107") > 0
+        cityName = "Jacobina"
+        stateName = "Bahia"
     Case Else
-        cidade = "Desconhecida"
-        estado = "Desconhecido"
+        cityName = "Desconhecida"
+        stateName = "Desconhecido"
 End Select
-RegistrarMensagem "Cidade: " & cidade & ", Estado: " & estado
 
 ' Adiciona o ano atual às datas de feriados
-feriadosNacionais = AdicionarAnoAtual(feriadosNacionais)
-feriadosEstaduaisBahia = AdicionarAnoAtual(feriadosEstaduaisBahia)
-feriadosEstaduaisPernambuco = AdicionarAnoAtual(feriadosEstaduaisPernambuco)
-feriadosMunicipaisPetrolina = AdicionarAnoAtual(feriadosMunicipaisPetrolina)
-feriadosMunicipaisJuazeiro = AdicionarAnoAtual(feriadosMunicipaisJuazeiro)
-feriadosMunicipaisBonfim = AdicionarAnoAtual(feriadosMunicipaisBonfim)
-feriadosMunicipaisJacobina = AdicionarAnoAtual(feriadosMunicipaisJacobina)
+arrFeriadosNacionais = AddCurrentYear(arrFeriadosNacionais)
+arrFeriadosEstaduaisBahia = AddCurrentYear(arrFeriadosEstaduaisBahia)
+arrFeriadosEstaduaisPernambuco = AddCurrentYear(arrFeriadosEstaduaisPernambuco)
+arrFeriadosMunicipaisPetrolina = AddCurrentYear(arrFeriadosMunicipaisPetrolina)
+arrFeriadosMunicipaisJuazeiro = AddCurrentYear(arrFeriadosMunicipaisJuazeiro)
+arrFeriadosMunicipaisBonfim = AddCurrentYear(arrFeriadosMunicipaisBonfim)
+arrFeriadosMunicipaisJacobina = AddCurrentYear(arrFeriadosMunicipaisJacobina)
 
 ' Lista de usuários permitidos
-Dim usuariosPermitidos
-usuariosPermitidos = Array(hostname & "\suporte", "sicredi\aquilis_souza", "sicredi\charlles_andrade")
+Dim arrAllowedUsers
+arrAllowedUsers = Array(hostName & "\suporte", "sicredi\aquis_souza", "sicredi\charlles_andrade")
 
 ' Verifica se o usuário logado está na lista de usuários permitidos
-Dim usuarioLogado, i, usuarioPermitido
-usuarioLogado = ObterUsuarioLogado()
-RegistrarMensagem "Usuário Logado: " & usuarioLogado
-usuarioPermitido = False
+Dim loggedUser, i, isUserAllowed
+loggedUser = GetLoggedUser()
+isUserAllowed = False
 
-For i = 0 To UBound(usuariosPermitidos)
-    If LCase(usuarioLogado) = LCase(usuariosPermitidos(i)) Then
-        usuarioPermitido = True
+For i = 0 To UBound(arrAllowedUsers)
+    If LCase(loggedUser) = LCase(arrAllowedUsers(i)) Then
+        isUserAllowed = True
         Exit For
     End If
 Next
 
 ' Se o usuário for permitido, encerra o script
-If usuarioPermitido Then
-    RegistrarMensagem "Usuário permitido, encerrando script."
-    Set usuariosPermitidos = Nothing
-    Set i = Nothing
+If isUserAllowed Then
     WScript.Quit
 End If
 
-RegistrarMensagem "Usuário não permitido, verificando feriados e finais de semana."
-
 ' Verificação de Feriados e Finais de Semana
-Dim dataAtual, eFeriado, eFinalDeSemana, pendriveConectado
-dataAtual = Day(Now) & "/" & Month(Now) & "/" & Year(Now)
-eFeriado = Eferiado(dataAtual, feriadosNacionais) Or Eferiado(dataAtual, feriadosVariaveis)
-eFinalDeSemana = EFinalDeSemana()
-pendriveConectado = PendrivePermitidoConectado(pendrivesPermitidos)
+Dim currentDate, isHolidayToday, isWeekendToday, isPendriveConnected
+currentDate = Day(Now) & "/" & Month(Now)
+isHolidayToday = IsHoliday(currentDate, arrFeriadosNacionais) Or IsHoliday(currentDate, arrFeriadosVariaveis)
+isWeekendToday = IsWeekend()
+isPendriveConnected = IsPendriveAllowedConnected(arrPendrivesPermitidos)
 
-If estado = "Bahia" Then
-    eFeriado = eFeriado Or Eferiado(dataAtual, feriadosEstaduaisBahia)
-ElseIf estado = "Pernambuco" Then
-    eFeriado = eFeriado Or Eferiado(dataAtual, feriadosEstaduaisPernambuco)
+If stateName = "Bahia" Then
+    isHolidayToday = isHolidayToday Or IsHoliday(currentDate, arrFeriadosEstaduaisBahia)
+ElseIf stateName = "Pernambuco" Then
+    isHolidayToday = isHolidayToday Or IsHoliday(currentDate, arrFeriadosEstaduaisPernambuco)
 End If
 
-Select Case cidade
+Select Case cityName
     Case "Petrolina"
-        eFeriado = eFeriado Or Eferiado(dataAtual, feriadosMunicipaisPetrolina)
+        isHolidayToday = isHolidayToday Or IsHoliday(currentDate, arrFeriadosMunicipaisPetrolina)
     Case "Juazeiro"
-        eFeriado = eFeriado Or Eferiado(dataAtual, feriadosMunicipaisJuazeiro)
+        isHolidayToday = isHolidayToday Or IsHoliday(currentDate, arrFeriadosMunicipaisJuazeiro)
     Case "Senhor do Bonfim"
-        eFeriado = eFeriado Or Eferiado(dataAtual, feriadosMunicipaisBonfim)
+        isHolidayToday = isHolidayToday Or IsHoliday(currentDate, arrFeriadosMunicipaisBonfim)
     Case "Jacobina"
-        eFeriado = eFeriado Or Eferiado(dataAtual, feriadosMunicipaisJacobina)
+        isHolidayToday = isHolidayToday Or IsHoliday(currentDate, arrFeriadosMunicipaisJacobina)
 End Select
 
 ' Se for fim de semana ou feriado
-If eFeriado Or eFinalDeSemana Then
-    If pendriveConectado Then
-        RegistrarMensagem "Pendrive conectado, encerrando script."
-        Set dataAtual = Nothing
-        Set eFeriado = Nothing
-        Set eFinalDeSemana = Nothing
-        Set pendriveConectado = Nothing
+If isHolidayToday Or isWeekendToday Then
+    If isPendriveConnected Then
         WScript.Quit
     Else
-        RegistrarMensagem "Feriado ou final de semana, pendrive não conectado, entrando em loop de logoff."
         Do
             WScript.Sleep 1000 ' Espera 1 segundo
             Dim WshShell
             Set WshShell = WScript.CreateObject("WScript.Shell")
+            WshShell.Popup "Pendrive não conectado. O sistema irá fazer logoff agora.", 5, "Atenção", 48
             WshShell.Run "shutdown.exe -l", 0, False
             Set WshShell = Nothing
         Loop
@@ -246,20 +222,15 @@ If eFeriado Or eFinalDeSemana Then
 End If
 
 ' Loop de Verificação de Hora
-RegistrarMensagem "Entrando em loop de verificação de hora."
 
 Do
-    If VerificarHora() Then
-        pendriveConectado = PendrivePermitidoConectado(pendrivesPermitidos)
-        If pendriveConectado Then
-            RegistrarMensagem "Pendrive conectado, encerrando script."
-            Set pendriveConectado = Nothing
+    If CheckTime() Then
+        isPendriveConnected = IsPendriveAllowedConnected(arrPendrivesPermitidos)
+        If isPendriveConnected Then
             WScript.Quit
         Else
-            RegistrarMensagem "Fora do horário permitido, pendrive não conectado, entrando em loop de logoff."
             Do
                 WScript.Sleep 1000 ' Espera 1 segundo
-                Dim WshShell
                 Set WshShell = WScript.CreateObject("WScript.Shell")
                 WshShell.Run "shutdown.exe -l", 0, False
                 Set WshShell = Nothing
@@ -269,22 +240,3 @@ Do
     
     WScript.Sleep 60000 ' Espera 1 minuto
 Loop
-
-' Liberar memória
-Set hostname = Nothing
-Set cidade = Nothing
-Set estado = Nothing
-Set feriadosNacionais = Nothing
-Set feriadosEstaduaisBahia = Nothing
-Set feriadosEstaduaisPernambuco = Nothing
-Set feriadosMunicipaisPetrolina = Nothing
-Set feriadosMunicipaisJuazeiro = Nothing
-Set feriadosMunicipaisBonfim = Nothing
-Set feriadosMunicipaisJacobina = Nothing
-Set feriadosVariaveis = Nothing
-Set usuariosPermitidos = Nothing
-Set usuarioLogado = Nothing
-Set dataAtual = Nothing
-Set eFeriado = Nothing
-Set eFinalDeSemana = Nothing
-Set pendriveConectado = Nothing
